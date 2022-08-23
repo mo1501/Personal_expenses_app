@@ -2,36 +2,49 @@
 
 import 'package:flutter/material.dart';
 import 'package:personal_expenses_app/models/transaction.dart';
+import 'package:personal_expenses_app/widgets/chart.dart';
 import 'package:personal_expenses_app/widgets/new_transaction.dart';
 import 'package:personal_expenses_app/widgets/transaction_list.dart';
-import 'package:personal_expenses_app/widgets/user_transaction.dart';
+
 import './widgets/transaction_list.dart';
 import './widgets/new_transaction.dart';
 import './models/transaction.dart';
 
 void main() => runApp(MyApp());
 
-class MyApp extends StatefulWidget {
-  const MyApp({Key key}) : super(key: key);
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter App',
+      title: 'Personal Expenses',
+      theme: ThemeData(
+          primarySwatch: Colors.teal,
+          accentColor: Colors.red,
+          errorColor: Colors.red,
+          fontFamily: 'Quicksand',
+          textTheme: ThemeData.light().textTheme.copyWith(
+                  headline6: TextStyle(
+                fontFamily: 'OpenSans',
+                fontSize: 18,
+              )),
+          appBarTheme: AppBarTheme(
+              textTheme: ThemeData.light().textTheme.copyWith(
+                      headline6: TextStyle(
+                    fontFamily: 'OpenSans',
+                    fontSize: 20,
+                  )))),
       home: MyHomePage(),
     );
   }
 }
 
-class MyHomePage extends StatelessWidget {
-  //String titleInput;
-  //String amountInput;
+class MyHomePage extends StatefulWidget {
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
 
+class _MyHomePageState extends State<MyHomePage> {
+  //String titleInput;
   final List<Transaction> _userTransactions = [
     Transaction(
       id: 't1',
@@ -47,12 +60,23 @@ class MyHomePage extends StatelessWidget {
     ),
   ];
 
-  void _addNewTransaction(String txTitle, double txAmount) {
+  List<Transaction> get _recentTransactions {
+    return _userTransactions.where((txelement) {
+      return txelement.date.isAfter(DateTime.now().subtract(Duration(days: 7)));
+    }).toList();
+  }
+
+  void _addNewTransaction(
+      String txTitle, double txAmount, DateTime chosenDate) {
     final newTx = Transaction(
         title: txTitle,
         amount: txAmount,
-        date: DateTime.now(),
+        date: chosenDate,
         id: DateTime.now().toString());
+
+    setState(() {
+      _userTransactions.add(newTx);
+    });
   }
 
   void _startAddNewTransactions(BuildContext ctx) {
@@ -61,18 +85,29 @@ class MyHomePage extends StatelessWidget {
         builder: (_) {
           //bCtx) {
           return GestureDetector(
-            onTap: (){},
+            onTap: () {},
             child: NewTransaction(_addNewTransaction),
             behavior: HitTestBehavior.opaque,
           );
         });
   }
 
+  void deleteTransaction(String id) {
+    setState(() {
+      _userTransactions.removeWhere((tx) {
+        return tx.id == id;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Flutter App'),
+        title: Text(
+          'Personal Expenses',
+          style: TextStyle(fontFamily: 'OpenSans'),
+        ),
         actions: <Widget>[
           IconButton(
               onPressed: () => _startAddNewTransactions(context),
@@ -85,14 +120,9 @@ class MyHomePage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Card(
-              color: Colors.blue,
-              // ignore: sort_child_properties_last
-              child: Container(width: double.infinity, child: Text('Chart!')),
-              elevation: 5,
-            ),
+            Chart(_recentTransactions),
             //UserTransactions(),
-            TransactionList(_userTransactions),
+            TransactionList(_userTransactions, deleteTransaction),
           ],
         ),
       ),
